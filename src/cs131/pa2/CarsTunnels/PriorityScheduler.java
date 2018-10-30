@@ -21,9 +21,9 @@ public class PriorityScheduler extends Tunnel{
     Comparator<Vehicle> vehicleComparator = new Comparator<Vehicle>() {
         @Override
         public int compare(Vehicle lhs, Vehicle rhs) {
-	        if (lhs.getPriority() < rhs.getPriority()) return -1;
+	        if (lhs.getPriority() < rhs.getPriority()) return 1;
 	        if (lhs.getPriority() == (rhs.getPriority())) return 0;
-	        return +1;
+	        return -1;
 	    }
     };
 	PriorityQueue<Vehicle> waiting = new PriorityQueue<Vehicle>(vehicleComparator);
@@ -41,7 +41,7 @@ public class PriorityScheduler extends Tunnel{
 		lock.lock();
 		try {
 			waiting.add(vehicle);
-			while(!vehicle.equals(waiting.peek()) && tunnels.size()==0) {
+			while(!vehicle.equals(waiting.peek()) || !canEnter(vehicle)) {
 				try {
 					tunnelNotEmpty.await();
 				} catch (InterruptedException e) {
@@ -49,21 +49,9 @@ public class PriorityScheduler extends Tunnel{
 					e.printStackTrace();
 				}
 			}
-			for(int i = 0; i < tunnels.size(); i++) {
-				Tunnel tunnel = ((ArrayList<Tunnel>) tunnels).get(i);
-				if(tunnel.tryToEnter(vehicle)) {
-					if(tunnelToVehicle.get(tunnel) != null) {
-						tunnelToVehicle.get(tunnel).add(vehicle);
-					}
-					else{
-						tunnelToVehicle.put((BasicTunnel)tunnel, new ArrayList<Vehicle>());
-						tunnelToVehicle.get(tunnel).add(vehicle);
-					}
-					waiting.poll();
-					return true;
-				}
-			}
-			return false;
+			waiting.poll();
+			tunnelNotEmpty.signalAll();
+			return true;
 		}finally{
 			lock.unlock();
 		}
@@ -80,8 +68,6 @@ public class PriorityScheduler extends Tunnel{
 				}
 				return true;
 			}
-			
-
 		}
 		return false;
 	}
@@ -89,13 +75,9 @@ public class PriorityScheduler extends Tunnel{
 	public void exitTunnelInner(Vehicle vehicle) {
 		lock.lock();
 		try {
-			Vehicle v =null;
-			for(int j = 0; j < tunnels.size(); j++) {
-				Tunnel t = ((ArrayList<Tunnel>) tunnels).get(j);
-	//			int counter=0;
+			for(Tunnel t : tunnels) {
 				ArrayList<Vehicle> myList = tunnelToVehicle.get(t);
 				for(int i = 0; i < myList.size(); i++) {
-	//				counter++;
 					if(myList.get(i).equals(vehicle)) {
 						t.exitTunnel(vehicle);
 						tunnelToVehicle.get(t).remove(vehicle);
