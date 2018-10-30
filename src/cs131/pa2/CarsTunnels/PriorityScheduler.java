@@ -2,7 +2,9 @@ package cs131.pa2.CarsTunnels;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.PriorityQueue;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -13,49 +15,42 @@ import cs131.pa2.Abstract.Log.Log;
 
 public class PriorityScheduler extends Tunnel{
 	private Collection<Tunnel> 	tunnels = new ArrayList<Tunnel>();
-	private ArrayList<Vehicle> waiting = new ArrayList<Vehicle>();
 	private HashMap<BasicTunnel, ArrayList<Vehicle>> tunnelToVehicle = new HashMap<BasicTunnel, ArrayList<Vehicle>>();
-	private int tunnelNumber = 0;
 	private Lock lock = new ReentrantLock();
 	private Condition tunnelNotEmpty = lock.newCondition();
-	//create priority queue for waiting vehicles
-//	private int maxPriority = 0;
+    Comparator<Vehicle> vehicleComparator = new Comparator<Vehicle>() {
+        @Override
+        public int compare(Vehicle lhs, Vehicle rhs) {
+	        if (lhs.getPriority() < rhs.getPriority()) return -1;
+	        if (lhs.getPriority() == (rhs.getPriority())) return 0;
+	        return +1;
+	    }
+    };
+	PriorityQueue<Vehicle> waiting = new PriorityQueue<Vehicle>(vehicleComparator);
 	
-	
-	
+
 	public PriorityScheduler(String name,Collection<Tunnel> tunnels, Log log) {
 		super(name);
 		this.tunnels = tunnels;
 		
+
 	}
 
 	@Override
 	public boolean tryToEnterInner(Vehicle vehicle) {
-//		lock.lock();
-		int maxPriority=0;
-		for(Vehicle v : waiting) {
-			if(v.getPriority()>maxPriority) {
-				maxPriority = v.getPriority();
-			}
-		}
-//		while(vehicle.getPriority() < maxPriority ||  !canEnter(vehicle)) {
-//			try {
-//				tunnelNotEmpty.await();
-//			} catch (InterruptedException e) {
-//				// TODO Auto-generated catch block
-//				e.printStackTrace();
-//			}
-//		}
-		if(vehicle.getPriority()<maxPriority) {
+		lock.lock();
+		try {
 			waiting.add(vehicle);
-			return false;
-		}else {
-//			if(tunnels.size()<1) {
-//				BasicTunnel tunnel = new BasicTunnel(""+tunnelNumber++);
-//				tunnels.add(tunnel);
-//				tunnelToVehicle.put(tunnel, new ArrayList<Vehicle>());
-//			}
-			for(Tunnel tunnel : tunnels) {
+			while(!vehicle.equals(waiting.peek()) && tunnels.size()==0) {
+				try {
+					tunnelNotEmpty.await();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			for(int i = 0; i < tunnels.size(); i++) {
+				Tunnel tunnel = ((ArrayList<Tunnel>) tunnels).get(i);
 				if(tunnel.tryToEnter(vehicle)) {
 					if(tunnelToVehicle.get(tunnel) != null) {
 						tunnelToVehicle.get(tunnel).add(vehicle);
@@ -64,33 +59,14 @@ public class PriorityScheduler extends Tunnel{
 						tunnelToVehicle.put((BasicTunnel)tunnel, new ArrayList<Vehicle>());
 						tunnelToVehicle.get(tunnel).add(vehicle);
 					}
-					waiting.remove(vehicle);
+					waiting.poll();
 					return true;
 				}
-				
 			}
-			
-			waiting.add(vehicle);
 			return false;
+		}finally{
+			lock.unlock();
 		}
-//		for(Tunnel tunnel : tunnels) {
-//			if(tunnel.tryToEnter(vehicle)) {
-//				if(tunnelToVehicle.get(tunnel) != null) {
-//					tunnelToVehicle.get(tunnel).add(vehicle);
-//				}
-//				else{
-//					tunnelToVehicle.put((BasicTunnel)tunnel, new ArrayList<Vehicle>());
-//					tunnelToVehicle.get(tunnel).add(vehicle);
-//				}
-//				lock.unlock();
-//				return true;
-//			}
-//			
-//		}
-//		lock.unlock();
-//		return false;
-		
-
 	}
 	private boolean canEnter(Vehicle vehicle) {
 		for(Tunnel tunnel : tunnels) {
@@ -105,33 +81,34 @@ public class PriorityScheduler extends Tunnel{
 				return true;
 			}
 			
+
 		}
 		return false;
 	}
 	@Override
 	public void exitTunnelInner(Vehicle vehicle) {
-//		lock.lock();
-		int maxPriority =0;
-		Vehicle v =null;
-		for(Tunnel t: tunnels) {
-			int counter=0;
-			for(Vehicle vArray: tunnelToVehicle.get(t)) {
-				counter++;
-				if(vArray.equals(vehicle)) {
-					t.exitTunnel(vehicle);
-					tunnelToVehicle.get(t).remove(counter);
-					for(Vehicle waitingVehicle : waiting) {
-						if(waitingVehicle.getPriority()>maxPriority) {
-							v = waitingVehicle;
-						}
+		lock.lock();
+		try {
+			Vehicle v =null;
+			for(int j = 0; j < tunnels.size(); j++) {
+				Tunnel t = ((ArrayList<Tunnel>) tunnels).get(j);
+	//			int counter=0;
+				ArrayList<Vehicle> myList = tunnelToVehicle.get(t);
+				for(int i = 0; i < myList.size(); i++) {
+	//				counter++;
+					if(myList.get(i).equals(vehicle)) {
+						t.exitTunnel(vehicle);
+						tunnelToVehicle.get(t).remove(vehicle);
+						tunnelNotEmpty.signalAll();	
+						return;
 					}
-					t.tryToEnter(v);
-//					tunnelNotEmpty.signalAll();	
-				}
-			}		
+				}		
+			}
 		}
-//		lock.unlock();
-		waiting.add(v);
+		finally {
+			lock.unlock();
+		}
 	}
 	
+
 }
