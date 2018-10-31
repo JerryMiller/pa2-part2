@@ -21,9 +21,10 @@ public class PriorityScheduler extends Tunnel{
     Comparator<Vehicle> vehicleComparator = new Comparator<Vehicle>() {
         @Override
         public int compare(Vehicle lhs, Vehicle rhs) {
-	        if (lhs.getPriority() < rhs.getPriority()) return 1;
-	        if (lhs.getPriority() == (rhs.getPriority())) return 0;
-	        return -1;
+        	return rhs.getPriority()-lhs.getPriority();	
+//	        if (lhs.getPriority() < rhs.getPriority()) return 1; 
+//	        if (lhs.getPriority() == (rhs.getPriority())) return 0;
+//	        return -1;
 	    }
     };
 	PriorityQueue<Vehicle> waiting = new PriorityQueue<Vehicle>(vehicleComparator);
@@ -58,7 +59,7 @@ public class PriorityScheduler extends Tunnel{
 	}
 	private boolean canEnter(Vehicle vehicle) {
 		for(Tunnel tunnel : tunnels) {
-			if(tunnel.tryToEnter(vehicle)) {
+			if(tunnel.tryToEnterInner(vehicle)) {
 				if(tunnelToVehicle.get(tunnel) != null) {
 					tunnelToVehicle.get(tunnel).add(vehicle);
 				}
