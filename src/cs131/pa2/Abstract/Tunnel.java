@@ -1,9 +1,15 @@
 package cs131.pa2.Abstract;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Objects;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import cs131.pa2.Abstract.Log.EventType;
 import cs131.pa2.Abstract.Log.Log;
+import cs131.pa2.CarsTunnels.BasicTunnel;
 
 
 /**
@@ -24,6 +30,14 @@ public abstract class Tunnel {
 	private final String name;
 	public static Log DEFAULT_LOG = new Log();
     private final Log log;
+    public Lock lock = new ReentrantLock();
+	public Condition tunnelNotEmpty = lock.newCondition();
+	public Lock ambOutTunnel =  new ReentrantLock();
+	public Condition ambulanceOutTunnel = ambOutTunnel.newCondition();
+	public Lock ambInTunnel =  new ReentrantLock();
+	public Condition ambulanceInTunnel = ambInTunnel.newCondition();
+	public boolean amb = false;
+    public HashMap<BasicTunnel, ArrayList<Vehicle>> tunnelToVehicle = new HashMap<BasicTunnel, ArrayList<Vehicle>>();
     
     public Tunnel(String name, Log log) {
         this.name = name;

@@ -8,6 +8,7 @@ public class BasicTunnel extends Tunnel{
 		int car = 0;
 		int sled = 0;
 		Direction direction = null;
+		public int ambulance = 0;
 		
 		
 	public BasicTunnel(String name) {
@@ -16,7 +17,18 @@ public class BasicTunnel extends Tunnel{
 
 	@Override
 	public synchronized boolean tryToEnterInner(Vehicle vehicle) {
-		if(car==0 && sled==0) {
+		if(vehicle instanceof Ambulance )
+			if(ambulance>0) {
+				return false;
+			}else {
+				ambulance++;
+				return true;
+			}
+		if(ambulance>0) {
+			return false;
+		}
+		
+		if((car==0 && sled==0)) {
 			if(vehicle instanceof Car) {
 				car++;
 			}else {
@@ -44,8 +56,10 @@ public class BasicTunnel extends Tunnel{
 	public synchronized void exitTunnelInner(Vehicle vehicle) {
 		if(vehicle instanceof Car) {
 			car--;
-		}else {
+		}else if(vehicle instanceof Sled) {
 			sled--;
+		}else {
+			ambulance--;
 		}
 		if(car==0 && sled==0) {
 			direction=null;

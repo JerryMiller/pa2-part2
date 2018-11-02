@@ -15,7 +15,7 @@ import cs131.pa2.Abstract.Log.Log;
 
 public class PriorityScheduler extends Tunnel{
 	private Collection<Tunnel> 	tunnels = new ArrayList<Tunnel>();
-	private HashMap<BasicTunnel, ArrayList<Vehicle>> tunnelToVehicle = new HashMap<BasicTunnel, ArrayList<Vehicle>>();
+//	public HashMap<BasicTunnel, ArrayList<Vehicle>> tunnelToVehicle = new HashMap<BasicTunnel, ArrayList<Vehicle>>();
 	private Lock lock = new ReentrantLock();
 	private Condition tunnelNotEmpty = lock.newCondition();
     Comparator<Vehicle> vehicleComparator = new Comparator<Vehicle>() {

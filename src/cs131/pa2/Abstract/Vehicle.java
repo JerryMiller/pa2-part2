@@ -1,8 +1,16 @@
 package cs131.pa2.Abstract;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import cs131.pa2.Abstract.Log.EventType;
 import cs131.pa2.Abstract.Log.Log;
+import cs131.pa2.CarsTunnels.Ambulance;
+import cs131.pa2.CarsTunnels.BasicTunnel;
+import cs131.pa2.CarsTunnels.PreemptivePriorityScheduler;
+import cs131.pa2.CarsTunnels.PriorityScheduler;
 
 /**
  * A Vehicle is a Runnable which enters tunnels. You must subclass
@@ -27,7 +35,9 @@ public abstract class Vehicle implements Runnable {
     private int                	priority;
     private int                	speed;
     private Log 				log;
-
+    private Tunnel tunnel;
+//    private Lock lock =  new ReentrantLock();
+//	private Condition ambulanceInTunnel = lock.newCondition();
     /**
      * Initialize a Vehicle; called from Vehicle constructors.
      */
@@ -139,11 +149,14 @@ public abstract class Vehicle implements Runnable {
         // entire method.
         //
         while(true) {
-            for(Tunnel tunnel : tunnels) {
-                if(tunnel.tryToEnter(this)) {
+        	for(Tunnel tunnel : tunnels) {
+                if(tunnel.tryToEnter(this)) { // Tunnel is actually the preemptive priority scheudle because we call vehicle.addTunnel(PPS);
                     doWhileInTunnel();
                     tunnel.exitTunnel(this);
                     this.log.addToLog(this, EventType.COMPLETE);
+//                    if(this instanceof Ambulance) {
+//                    	lockTunnel.ambulanceInTunnel.signalAll();
+//                    }
                     return; // done, so leave the whole function
                 }
             }
@@ -165,11 +178,79 @@ public abstract class Vehicle implements Runnable {
      * vehicle is, the less time this will take.
      */
     public final void doWhileInTunnel() {
-         try {
-             Thread.sleep((10 - speed) * 100);
-         } catch(InterruptedException e) {
-             System.err.println("Interrupted vehicle " + getName());
-         }
+    	Tunnel lockTunnel =null;
+    	for(Tunnel t: this.tunnels) {
+    		lockTunnel= t;
+    	}
+    	if(lockTunnel ==null)
+    		return;
+    	lockTunnel.ambOutTunnel.lock();
+    	lockTunnel.ambInTunnel.lock();
+    	long nanos = TimeUnit.MILLISECONDS.toNanos(((10 - speed) * 100));
+    	if(this instanceof Ambulance) {
+    		System.out.println("Ambulance1");
+	    	 try {
+//	    		 lockTunnel.ambulanceOutTunnel.signalAll();
+	    		 Thread.sleep(((10 - speed) * 100));
+	    		 lockTunnel.ambulanceInTunnel.signalAll();
+	    		 lockTunnel.ambOutTunnel.unlock();
+	    		 lockTunnel.ambInTunnel.unlock();
+	             
+	         } catch(InterruptedException e) {
+	             System.err.println("Interrupted vehicle " + getName());
+	         }
+	    	 return;
+	    }
+    	
+    	
+    	
+
+    		while(!ambInTunnel()) {
+				try {
+					lockTunnel.ambInTunnel.unlock();
+					nanos = lockTunnel.ambulanceOutTunnel.awaitNanos(nanos);
+					if(nanos <= 0L) {
+						System.out.println("In Nanos");
+						lockTunnel.ambOutTunnel.unlock();
+						lockTunnel.ambInTunnel.unlock();
+	    				return;
+	    			}
+					while(ambInTunnel()){ 
+					lockTunnel.ambOutTunnel.unlock();
+					lockTunnel.ambulanceInTunnel.await();
+					
+					}
+
+					
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
+				
+			}
+    		lockTunnel.ambOutTunnel.unlock();
+			lockTunnel.ambInTunnel.unlock();
+
+    		
+    	
+   
+    }
+    public boolean ambInTunnel() {
+    	if(((BasicTunnel)this.tunnel).ambulance>0) {
+    		return true;
+    	}else {
+    	return false;	
+    	}
+    	
+
+    }
+    
+    public Tunnel getTunnel() {
+    	return this.tunnel;
+    }
+    public void setTunnel(Tunnel tunnel) {
+    	this.tunnel = tunnel;
     }
     
     @Override
