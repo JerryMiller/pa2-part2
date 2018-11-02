@@ -49,6 +49,7 @@ public abstract class Vehicle implements Runnable {
         this.speed     = getDefaultSpeed();
         this.log       = log;
         this.tunnels   = new ArrayList<Tunnel>();
+        this.tunnel= getTunnel();
 
         if(this.speed < 0 || this.speed > 9) {
             throw new RuntimeException("Vehicle has invalid speed");
@@ -178,12 +179,18 @@ public abstract class Vehicle implements Runnable {
      * vehicle is, the less time this will take.
      */
     public final void doWhileInTunnel() {
+    	System.out.println("While in Tunnel"+ this.toString());
     	Tunnel lockTunnel =null;
     	for(Tunnel t: this.tunnels) {
     		lockTunnel= t;
     	}
-    	if(lockTunnel ==null)
+    	if(lockTunnel == null)
     		return;
+//    	if(this.tunnel==null) {
+//    		lockTunnel.ambOutTunnel.unlock();
+//			lockTunnel.ambInTunnel.unlock();
+//    		return;
+//    	}
     	lockTunnel.ambOutTunnel.lock();
     	lockTunnel.ambInTunnel.lock();
     	long nanos = TimeUnit.MILLISECONDS.toNanos(((10 - speed) * 100));
@@ -206,13 +213,14 @@ public abstract class Vehicle implements Runnable {
     	
 
     		while(!ambInTunnel()) {
+    			System.out.println("Hi");
 				try {
 					lockTunnel.ambInTunnel.unlock();
 					nanos = lockTunnel.ambulanceOutTunnel.awaitNanos(nanos);
 					if(nanos <= 0L) {
 						System.out.println("In Nanos");
 						lockTunnel.ambOutTunnel.unlock();
-						lockTunnel.ambInTunnel.unlock();
+//						lockTunnel.ambInTunnel.unlock();
 	    				return;
 	    			}
 					while(ambInTunnel()){ 
@@ -237,6 +245,9 @@ public abstract class Vehicle implements Runnable {
    
     }
     public boolean ambInTunnel() {
+    	if(this.tunnel == null) {
+    		return false;
+    	}
     	if(((BasicTunnel)this.tunnel).ambulance>0) {
     		return true;
     	}else {

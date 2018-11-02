@@ -16,7 +16,6 @@ import cs131.pa2.Abstract.Log.Log;
 public class PreemptivePriorityScheduler extends Tunnel{
 	private Collection<Tunnel> 	tunnels = new ArrayList<Tunnel>();
 //	public HashMap<BasicTunnel, ArrayList<Vehicle>> tunnelToVehicle = new HashMap<BasicTunnel, ArrayList<Vehicle>>();
-	
 	private Lock tryToEnterInner = new ReentrantLock();
 	private Condition tunnelNotEmpty = tryToEnterInner.newCondition();
 	private Lock ambToAmbLock = new ReentrantLock();

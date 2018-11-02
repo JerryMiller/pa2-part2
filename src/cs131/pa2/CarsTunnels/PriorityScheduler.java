@@ -60,6 +60,7 @@ public class PriorityScheduler extends Tunnel{
 	private boolean canEnter(Vehicle vehicle) {
 		for(Tunnel tunnel : tunnels) {
 			if(tunnel.tryToEnterInner(vehicle)) {
+				vehicle.setTunnel(tunnel);
 				if(tunnelToVehicle.get(tunnel) != null) {
 					tunnelToVehicle.get(tunnel).add(vehicle);
 				}
