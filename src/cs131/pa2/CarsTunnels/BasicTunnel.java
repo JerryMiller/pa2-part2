@@ -1,5 +1,9 @@
 package cs131.pa2.CarsTunnels;
 
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
 import cs131.pa2.Abstract.Direction;
 import cs131.pa2.Abstract.Tunnel;
 import cs131.pa2.Abstract.Vehicle;
@@ -9,6 +13,10 @@ public class BasicTunnel extends Tunnel{
 		int sled = 0;
 		Direction direction = null;
 		public int ambulance = 0;
+		public Lock ambOutTunnel =  new ReentrantLock();
+		public Condition ambulanceOutTunnel = ambOutTunnel.newCondition();
+		public Lock ambInTunnel =  new ReentrantLock();
+		public Condition ambulanceInTunnel = ambInTunnel.newCondition();
 		
 		
 	public BasicTunnel(String name) {
@@ -21,6 +29,7 @@ public class BasicTunnel extends Tunnel{
 			if(ambulance>0) {
 				return false;
 			}else {
+				
 				ambulance++;
 				return true;
 			}

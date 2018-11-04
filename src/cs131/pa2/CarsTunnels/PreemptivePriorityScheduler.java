@@ -39,6 +39,7 @@ public class PreemptivePriorityScheduler extends Tunnel{
 
 	@Override
 	public boolean tryToEnterInner(Vehicle vehicle) {
+		try {
 		tryToEnterInner.lock();
 		ambToAmbLock.lock();
 		if(vehicle instanceof Ambulance) {
@@ -47,6 +48,7 @@ public class PreemptivePriorityScheduler extends Tunnel{
 				ambToAmbLock.unlock(); // Unsure about this  - should I be calling lock.unlock() or using finally?
 				return true;
 			}
+			if(vehicle.getTunnel()!=null)
 			while(((BasicTunnel)(vehicle.getTunnel())).ambulance>0) {
 			try {
 				AmbulancetoAmbulance.await();
@@ -59,14 +61,15 @@ public class PreemptivePriorityScheduler extends Tunnel{
 			
 			
 		}
-		
+		if(!(vehicle instanceof Ambulance)) {
 		try {
 			waiting.add(vehicle);
 			while(!vehicle.equals(waiting.peek()) || !canEnter(vehicle)) {
 				System.out.println("In trytoenterinnerfirstloop");
 				try {
-					
+					System.out.println("Waiting for " + vehicle.getName());
 					tunnelNotEmpty.await();
+					
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -79,10 +82,18 @@ public class PreemptivePriorityScheduler extends Tunnel{
 			tryToEnterInner.unlock();
 			ambToAmbLock.unlock();
 		}
+		}
+		
+		return false;
+		}catch(IllegalMonitorStateException e){
+			System.out.println("ILLEGAL MONITOR");
+			
+		}
+		return false;
 	}
 	private boolean canEnter(Vehicle vehicle) {
 		for(Tunnel tunnel : tunnels) {
-			if(tunnel.tryToEnterInner(vehicle)) {
+			if(tunnel.tryToEnter(vehicle)) {
 				vehicle.setTunnel(tunnel);
 				if(tunnelToVehicle.get(tunnel) != null) {
 					tunnelToVehicle.get(tunnel).add(vehicle);
@@ -112,6 +123,9 @@ public class PreemptivePriorityScheduler extends Tunnel{
 						}
 						if(vehicle instanceof Ambulance) {
 							AmbulancetoAmbulance.signalAll();
+//							vehicle.getTunnel().ambInTunnel.lock();
+//							vehicle.getTunnel().ambulanceInTunnel.signalAll();
+//							vehicle.getTunnel().ambInTunnel.unlock();
 						}
 						tunnelNotEmpty.signalAll();	
 						

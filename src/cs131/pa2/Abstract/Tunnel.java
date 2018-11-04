@@ -54,6 +54,7 @@ public abstract class Tunnel {
         log.addToLog(vehicle, this, EventType.ENTER_ATTEMPT, sig);
         if (this.tryToEnterInner(vehicle)) {
             log.addToLog(vehicle, this, EventType.ENTER_SUCCESS, sig);
+            System.out.println(this + "is the tunnel of the vehicle " + vehicle.getName());
             return true;
         } else {
             log.addToLog(vehicle, this, EventType.ENTER_FAILED, sig);

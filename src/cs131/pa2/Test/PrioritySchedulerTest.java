@@ -200,6 +200,7 @@ public class PrioritySchedulerTest {
     
     @Test
     public void PreemptivePriorityManyAmb() {
+    	System.out.println("************************************* PREEPTIVE MANY AMBULANCES***************");
     	List<Thread> vehicleThreads = new ArrayList<Thread>();
     	Tunnel preemptivePriorityScheduler = setupPreemptivePriorityScheduler(TestUtilities.mrNames[0]);
         // start 3 slow cars
@@ -299,6 +300,7 @@ public class PrioritySchedulerTest {
     
     @Test
     public void PreemptivePriorityManyTunnels() {
+    	System.out.println("***************************************************************Last Test Baby**************************************************");
     	List<Thread> vehicleThreads = new ArrayList<Thread>();
     	Tunnel preemptivePriorityScheduler = setupPreemptivePrioritySchedulerTwoTunnels(TestUtilities.mrNames[0], TestUtilities.mrNames[1]);
         // start a fast car in first tunnel
@@ -356,6 +358,7 @@ public class PrioritySchedulerTest {
 			}
 			if(currentEvent.getEvent() == EventType.LEAVE_START) {
 				if(currentEvent.getVehicle() instanceof Car && currentEvent.getTunnel().getName() == ambulanceTunnel.getName() && !ambulanceLeft) {
+					System.out.println(currentEvent.getTunnel().getName() + " == " + ambulanceTunnel.getName());
 					assertTrue("Vehicle "+currentEvent.getVehicle() + " left tunnel while ambulance was still running!", false);
 				}
 				if(currentEvent.getVehicle() instanceof Car && currentEvent.getTunnel().getName() != ambulanceTunnel.getName()) {
